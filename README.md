@@ -8,14 +8,14 @@ Across 50 randomized cluttered runs on a two-wheel differential-drive robot in M
 
 | Method | Path Completion Rate |
 |--------|---------------------|
-| **Online re-planning (PBSTO)** | **46%** |
+| **Online re-planning (PBSTO)** | **56%** |
 | Naive (single offline plan) | 14% |
 
-Online re-planning more than triples the success rate under stochastic disturbances and unmodeled clutter, validating the core claim of the original paper on a different platform.
+PBSTO with candidate selection quadruples the success rate compared to a single-shot naive plan under stochastic disturbances and unmodeled clutter, validating the core claim of the original paper on a different platform.
 
 ## How It Works
 
-At each replanning step, PBSTO samples candidate control sequences by perturbing a nominal forward trajectory with Gaussian noise. Each candidate is rolled out in MuJoCo to estimate goal progress. The best candidate is executed for one step, then the loop repeats from the new state, so stochastic dynamics and unmodeled obstacles can be corrected for online rather than committed to up front.
+At each replanning step, PBSTO samples ``num_samples`` candidate control sequences by perturbing a nominal forward trajectory with Gaussian noise. Each candidate is rolled out in MuJoCo from the current state (with state save/restore so the prediction doesn't affect the real robot) and scored by the minimum distance to the goal achieved during the rollout. The lowest-cost candidate is then executed for real. If the robot doesn't reach the goal, the state is reset and a fresh batch of candidates is sampled.
 
 ## Repo Layout
 
@@ -60,15 +60,17 @@ Runs headless. Each trial uses a fresh randomized obstacle layout. Reproducible 
 
 ## Key Parameters
 
-Defined in `planner.py` and `sim.py`:
+Defined in `sim.py`:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `horizon` | Rollout length per plan | `10` |
-| `std` | PBSTO sampling noise stddev | `0.1` |
-| `max_replans` | Replanning iterations per trial | `20` |
+| `horizon` | Rollout length per plan | `12` |
+| `num_samples` | Candidate plans sampled per replan | `15` |
+| `std` | Gaussian noise stddev per control element | `0.2` |
+| `max_replans` | Replanning iterations per trial | `10` |
 | `threshold` | Goal radius (m) | `0.60` |
-| `speed` | Wheel velocity scale | `10` |
+| `n_steps_pred` | Physics sub-steps per control during prediction | `100` |
+| `n_steps` (execution) | Physics sub-steps per control during execution | `200` |
 
 ## Citation
 
