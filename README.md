@@ -32,9 +32,13 @@ At each replanning step, PBSTO samples candidate control sequences by perturbing
 
 ## Setup
 
+Tested with Python 3.10 and 3.11.
+
 ```bash
 git clone https://github.com/AndrewOOndara/pbsto-replanning.git
 cd pbsto-replanning
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
