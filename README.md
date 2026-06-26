@@ -32,12 +32,15 @@ At each replanning step, PBSTO samples candidate control sequences by perturbing
 
 ## Setup
 
-Tested with Python 3.10 and 3.11.
+Tested with Python 3.10 and 3.11. PyBullet ships Linux-only wheels, so macOS users will compile from source (Xcode command line tools required).
 
 ```bash
+# macOS only, if you don't already have build tools:
+xcode-select --install
+
 git clone https://github.com/AndrewOOndara/pbsto-replanning.git
 cd pbsto-replanning
-python3 -m venv .venv
+python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
