@@ -1,10 +1,10 @@
 # Real-Time Motion Re-Planning Under Clutter and Uncertainty
 
-A PyBullet implementation of physics-based stochastic trajectory optimization (PBSTO) for online motion re-planning on a differential-drive mobile robot. Based on [Agboh & Dogar, 2018](https://arxiv.org/abs/1807.09049), this repo adapts the original arm-grasping algorithm to a two-wheel URDF robot and benchmarks online re-planning against a single-shot baseline in a randomized cluttered environment.
+A MuJoCo implementation of physics-based stochastic trajectory optimization (PBSTO) for online motion re-planning on a differential-drive mobile robot. Based on [Agboh & Dogar, 2018](https://arxiv.org/abs/1807.09049), this repo adapts the original arm-grasping algorithm to a two-wheel robot and benchmarks online re-planning against a single-shot baseline in a randomized cluttered environment.
 
 ## Result
 
-Across 50 randomized cluttered runs on a two-wheel URDF robot:
+Across 50 randomized cluttered runs on a two-wheel differential-drive robot:
 
 | Method | Path Completion Rate |
 |--------|---------------------|
@@ -15,32 +15,28 @@ Online re-planning nearly doubles success rate under stochastic disturbances and
 
 ## How It Works
 
-At each replanning step, PBSTO samples candidate control sequences by perturbing a nominal forward trajectory with Gaussian noise. Each candidate is rolled out in PyBullet to estimate goal progress. The best candidate is executed for one step, then the loop repeats from the new state, so stochastic dynamics and unmodeled obstacles can be corrected for online rather than committed to up front.
+At each replanning step, PBSTO samples candidate control sequences by perturbing a nominal forward trajectory with Gaussian noise. Each candidate is rolled out in MuJoCo to estimate goal progress. The best candidate is executed for one step, then the loop repeats from the new state, so stochastic dynamics and unmodeled obstacles can be corrected for online rather than committed to up front.
 
 ## Repo Layout
 
 ```
 .
-├── env.py              # Randomized obstacle field + scene loader
+├── env.py              # Randomized obstacle field + MJCF scene builder
 ├── planner.py          # PBSTO sampler + naive baseline plan
 ├── sim.py              # Single-trial simulation runner
 ├── benchmark.py        # 50-trial PBSTO vs naive comparison
-├── robotSim.py         # Interactive GUI demo
-├── urdf/               # Robot, target, and obstacle URDFs
+├── robotSim.py         # Interactive MuJoCo viewer demo
 └── requirements.txt
 ```
 
 ## Setup
 
-Tested with Python 3.10 and 3.11. PyBullet ships Linux-only wheels, so macOS users will compile from source (Xcode command line tools required).
+Tested with Python 3.10, 3.11, and 3.12. MuJoCo ships prebuilt wheels for macOS, Linux, and Windows, so no compilation is required.
 
 ```bash
-# macOS only, if you don't already have build tools:
-xcode-select --install
-
 git clone https://github.com/AndrewOOndara/pbsto-replanning.git
 cd pbsto-replanning
-python3.11 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
@@ -51,7 +47,7 @@ pip install -r requirements.txt
 python robotSim.py
 ```
 
-Opens a PyBullet GUI showing PBSTO navigating one randomized scene.
+Opens the MuJoCo viewer showing PBSTO navigating one randomized scene.
 
 ## Reproduce the Benchmark
 
