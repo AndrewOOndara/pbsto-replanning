@@ -22,7 +22,17 @@ def get_xy(model, data, name):
     return data.xpos[body_id, :2].copy()
 
 
-def step_robot(model, data, forward, turn, speed=10, n_steps=10, on_step=None):
+def reset_robot(model, data):
+    """Reset the robot's qpos and qvel to the model's keyframe-free defaults.
+
+    Re-uses ``mj_resetData`` to put the robot back at its MJCF spawn position
+    with zero velocity, then runs ``mj_forward`` to update derived state.
+    """
+    mujoco.mj_resetData(model, data)
+    mujoco.mj_forward(model, data)
+
+
+def step_robot(model, data, forward, turn, speed=8, n_steps=200, on_step=None):
     """Apply differential-drive velocities and step physics forward.
 
     Differential-drive mixing: ``v_left = forward - turn``,
@@ -47,8 +57,8 @@ def step_robot(model, data, forward, turn, speed=10, n_steps=10, on_step=None):
             on_step()
 
 
-def run_trial(model, data, planner="pbsto", horizon=10, max_replans=20,
-              std=0.1, threshold=0.6, seed=None, on_step=None):
+def run_trial(model, data, planner="pbsto", horizon=10, max_replans=50,
+              std=0.15, threshold=0.6, seed=None, on_step=None):
     """Drive the robot toward the target and return whether it arrived.
 
     For ``planner="pbsto"``, a fresh stochastic plan is sampled before each
@@ -74,6 +84,10 @@ def run_trial(model, data, planner="pbsto", horizon=10, max_replans=20,
 
     iterations = max_replans if planner == "pbsto" else 1
     for _ in range(iterations):
+        # Match the original Agboh & Dogar shotgun loop: try a noisy trajectory
+        # from the spawn state; if it doesn't reach the goal, reset and try again
+        # with new noise.
+        reset_robot(model, data)
         controls = pbsto_step(nominal, std, rng) if planner == "pbsto" else nominal
         for forward, turn in controls:
             step_robot(model, data, forward, turn, on_step=on_step)

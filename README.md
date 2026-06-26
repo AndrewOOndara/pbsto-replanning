@@ -4,14 +4,14 @@ A MuJoCo implementation of physics-based stochastic trajectory optimization (PBS
 
 ## Result
 
-Across 50 randomized cluttered runs on a two-wheel differential-drive robot:
+Across 50 randomized cluttered runs on a two-wheel differential-drive robot in MuJoCo:
 
 | Method | Path Completion Rate |
 |--------|---------------------|
-| **Online re-planning (PBSTO)** | **78%** |
-| Naive (single offline plan) | 43% |
+| **Online re-planning (PBSTO)** | **46%** |
+| Naive (single offline plan) | 14% |
 
-Online re-planning nearly doubles success rate under stochastic disturbances and unmodeled clutter, validating the core claim of the original paper on a different platform.
+Online re-planning more than triples the success rate under stochastic disturbances and unmodeled clutter, validating the core claim of the original paper on a different platform.
 
 ## How It Works
 

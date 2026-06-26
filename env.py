@@ -14,25 +14,32 @@ import mujoco
 MJCF_TEMPLATE = """
 <mujoco model="turtle_world">
   <compiler angle="radian"/>
-  <option timestep="0.02" integrator="RK4" gravity="0 0 -9.81"/>
+  <option timestep="0.005" integrator="implicitfast" gravity="0 0 -9.81"/>
   <default>
-    <geom contype="1" conaffinity="1" friction="0.8 0.005 0.001"/>
+    <geom friction="1.0 0.005 0.001"/>
   </default>
 
   <worldbody>
     <light pos="0 0 5" dir="0 0 -1"/>
     <geom name="floor" type="plane" size="20 20 0.1" rgba="0.85 0.9 0.85 1"/>
 
-    <body name="turtle" pos="0 0 0.15">
+    <body name="turtle" pos="0 0 0.20">
       <joint type="free"/>
-      <geom name="chassis" type="box" size="0.2 0.15 0.05" mass="2.0" rgba="0.2 0.4 0.85 1"/>
-      <body name="left_wheel" pos="0 0.2 -0.05">
-        <joint name="left_wheel" type="hinge" axis="0 1 0"/>
-        <geom type="cylinder" size="0.1 0.03" euler="1.5708 0 0" mass="0.5" rgba="0.1 0.1 0.1 1"/>
+      <geom name="chassis" type="box" size="0.18 0.12 0.04" mass="2.0" rgba="0.2 0.4 0.85 1"/>
+
+      <body name="left_wheel" pos="0 0.16 -0.10">
+        <joint name="left_wheel" type="hinge" axis="0 1 0" damping="0.05"/>
+        <geom type="cylinder" size="0.10 0.025" euler="1.5708 0 0" mass="0.3" rgba="0.1 0.1 0.1 1"/>
       </body>
-      <body name="right_wheel" pos="0 -0.2 -0.05">
-        <joint name="right_wheel" type="hinge" axis="0 1 0"/>
-        <geom type="cylinder" size="0.1 0.03" euler="1.5708 0 0" mass="0.5" rgba="0.1 0.1 0.1 1"/>
+      <body name="right_wheel" pos="0 -0.16 -0.10">
+        <joint name="right_wheel" type="hinge" axis="0 1 0" damping="0.05"/>
+        <geom type="cylinder" size="0.10 0.025" euler="1.5708 0 0" mass="0.3" rgba="0.1 0.1 0.1 1"/>
+      </body>
+
+      <body name="caster" pos="0.13 0 -0.15">
+        <joint type="ball" damping="0.001"/>
+        <geom type="sphere" size="0.05" mass="0.05"
+              friction="0.1 0.001 0.001" rgba="0.5 0.5 0.5 1"/>
       </body>
     </body>
 
@@ -44,14 +51,14 @@ MJCF_TEMPLATE = """
   </worldbody>
 
   <actuator>
-    <velocity name="left_motor" joint="left_wheel" kv="50"/>
-    <velocity name="right_motor" joint="right_wheel" kv="50"/>
+    <velocity name="left_motor" joint="left_wheel" kv="3" forcerange="-15 15"/>
+    <velocity name="right_motor" joint="right_wheel" kv="3" forcerange="-15 15"/>
   </actuator>
 </mujoco>
 """
 
 
-def random_obstacle_field(n=16, x_range=(1.0, 6.0), y_range=(-1.5, 1.5), seed=None):
+def random_obstacle_field(n=6, x_range=(1.0, 5.5), y_range=(-1.4, 1.4), seed=None):
     """Sample ``n`` obstacle positions uniformly in a rectangle in front of the robot.
 
     Args:
@@ -80,8 +87,8 @@ def build_scene(obstacle_positions):
         tuple: ``(model, data)`` ready to step with :func:`mujoco.mj_step`.
     """
     obstacle_xml = "\n    ".join(
-        f'<body name="obs_{i}" pos="{x} {y} 0.3">'
-        f'<geom type="box" size="0.15 0.15 0.3" rgba="0.85 0.25 0.25 1"/></body>'
+        f'<body name="obs_{i}" pos="{x} {y} 0.15">'
+        f'<geom type="box" size="0.10 0.10 0.15" rgba="0.85 0.25 0.25 1"/></body>'
         for i, (x, y) in enumerate(obstacle_positions)
     )
     xml = MJCF_TEMPLATE.format(obstacles=obstacle_xml)
