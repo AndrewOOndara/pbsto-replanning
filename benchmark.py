@@ -55,6 +55,8 @@ def benchmark(planner, n_trials=50, seed=42, viewer=False, speed=1.0):
         finally:
             if viewer_ctx is not None:
                 viewer_ctx.close()
+                del viewer_ctx
+                time.sleep(0.5)  # macOS needs time to tear down the GLFW window
 
         successes += int(result)
         print(f"  Trial {trial + 1:>3}/{n_trials}: {'SUCCESS' if result else 'FAIL'}")
