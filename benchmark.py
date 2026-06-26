@@ -1,7 +1,7 @@
 """Benchmark PBSTO vs the naive baseline across N randomized trials.
 
-Each trial spawns a fresh randomized obstacle field, runs the chosen planner
-once, and records success. Prints the final success rate.
+Each trial builds a fresh MuJoCo scene with a randomized obstacle field, runs
+the chosen planner once, and records success. Prints the final success rate.
 
 Usage:
     python benchmark.py --planner pbsto --trials 50
@@ -10,9 +10,7 @@ Usage:
 
 import argparse
 
-import pybullet as p
-
-from env import setup_world, random_obstacle_field, load_scene
+from env import random_obstacle_field, build_scene
 from sim import run_trial
 
 
@@ -30,13 +28,10 @@ def benchmark(planner, n_trials=50, seed=42):
     """
     successes = 0
     for trial in range(n_trials):
-        p.connect(p.DIRECT)
-        setup_world()
         obstacles = random_obstacle_field(seed=seed + trial)
-        robot, target, _ = load_scene([0, 0, 0.2], [6, 0, 0], obstacles)
-        result = run_trial(robot, target, planner=planner, seed=seed + trial)
+        model, data = build_scene(obstacles)
+        result = run_trial(model, data, planner=planner, seed=seed + trial)
         successes += int(result)
-        p.disconnect()
         print(f"  Trial {trial + 1:>3}/{n_trials}: {'SUCCESS' if result else 'FAIL'}")
     rate = successes / n_trials
     print(f"\n{planner.upper()}: {successes}/{n_trials} = {rate:.1%}")
