@@ -44,19 +44,28 @@ pip install -r requirements.txt
 ## Run the Demo
 
 ```bash
-python robotSim.py
+mjpython robotSim.py        # macOS
+python robotSim.py          # Linux / Windows
 ```
 
-Opens the MuJoCo viewer showing PBSTO navigating one randomized scene.
+Opens the MuJoCo viewer showing PBSTO navigating one randomized scene, with a red trail tracing the robot's path.
 
 ## Reproduce the Benchmark
+
+Headless (fastest, finishes in ~35 seconds for 50 PBSTO trials):
 
 ```bash
 python benchmark.py --planner pbsto --trials 50
 python benchmark.py --planner naive --trials 50
 ```
 
-Runs headless. Each trial uses a fresh randomized obstacle layout. Reproducible via the ``--seed`` flag.
+With the viewer (real-time playback, use `mjpython` on macOS):
+
+```bash
+mjpython benchmark.py --planner pbsto --trials 5 --viewer --speed 5
+```
+
+Each trial uses a fresh randomized obstacle layout. Reproducible via the ``--seed`` flag.
 
 ## Key Parameters
 
