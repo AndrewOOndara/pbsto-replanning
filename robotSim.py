@@ -21,9 +21,15 @@ def main(seed=42):
     model, data = build_scene(obstacles)
 
     with mujoco.viewer.launch_passive(model, data) as viewer:
+        dt = model.opt.timestep
+
+        def real_time_sync():
+            viewer.sync()
+            time.sleep(dt)  # throttle to wall-clock physics time
+
         success = run_trial(
             model, data, planner="pbsto", seed=seed,
-            on_step=viewer.sync,
+            on_step=real_time_sync,
         )
         print("SUCCESS" if success else "FAIL")
 
