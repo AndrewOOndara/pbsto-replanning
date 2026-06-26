@@ -20,23 +20,7 @@
 
   *(GIF or video of robot navigating cluttered scene — add here)*
 
-  ## What's Implemented
 
-  - PyBullet physics simulation with two-wheel URDF robot
-  - Stochastic forward dynamics rollouts for trajectory cost evaluation
-  - Online re-planning loop triggered on state divergence from nominal trajectory
-  - Randomized environment generator (obstacle count, position, friction)
-  - Benchmarking harness over N trials with success/failure logging
-  - Naive baseline planner for direct comparison
-
-  ## Repo Layout
-
-  .
-  ├── envs/                 # PyBullet environments + URDF assets
-  ├── planner/              # PBSTO + naive planner implementations
-  ├── benchmark/            # Multi-run evaluation harness
-  ├── results/              # Logged trajectories, metrics, plots
-  └── main.py               # Entry point
 
   ## Setup
 
