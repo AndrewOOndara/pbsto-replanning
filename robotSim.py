@@ -1,8 +1,7 @@
-"""Interactive PBSTO demo in the PyBullet GUI.
+"""Interactive PBSTO demo in the MuJoCo viewer.
 
-Spawns a two-wheel robot and a randomized obstacle field, then runs
-PBSTO online re-planning until the robot reaches the goal. The successful
-trajectory is traced in red.
+Builds a randomized obstacle field and runs PBSTO online re-planning until the
+robot reaches the goal, with the MuJoCo viewer rendering each physics step.
 
 Usage:
     python robotSim.py
@@ -10,26 +9,29 @@ Usage:
 
 import time
 
-import numpy as np
-import pybullet as p
+import mujoco
+import mujoco.viewer
 
-from env import setup_world, random_obstacle_field, load_scene
+from env import random_obstacle_field, build_scene
 from sim import run_trial
 
 
 def main(seed=42):
-    p.connect(p.GUI)
-    setup_world()
-
     obstacles = random_obstacle_field(seed=seed)
-    robot, target, _ = load_scene([0, 0, 0.2], [6, 0, 0], obstacles)
+    model, data = build_scene(obstacles)
 
-    success = run_trial(robot, target, planner="pbsto", seed=seed)
-    print("SUCCESS" if success else "FAIL")
+    with mujoco.viewer.launch_passive(model, data) as viewer:
+        success = run_trial(
+            model, data, planner="pbsto", seed=seed,
+            on_step=viewer.sync,
+        )
+        print("SUCCESS" if success else "FAIL")
 
-    # Keep the GUI open for a few seconds so the trajectory can be inspected.
-    time.sleep(5)
-    p.disconnect()
+        # Hold the viewer open for a few seconds so the result can be inspected.
+        end = time.time() + 5
+        while viewer.is_running() and time.time() < end:
+            viewer.sync()
+            time.sleep(0.02)
 
 
 if __name__ == "__main__":
