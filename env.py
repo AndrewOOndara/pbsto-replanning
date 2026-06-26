@@ -1,25 +1,54 @@
-"""Randomized cluttered environment for the navigation benchmark.
+"""Randomized cluttered environment for the MuJoCo navigation benchmark.
 
-Provides helpers to seed PyBullet with a flat ground plane, a two-wheel turtle
-robot, a goal marker, and a randomized field of cuboid obstacles in front of
-the robot's spawn.
+Builds an inline MJCF scene with a flat ground plane, a two-wheel differential-
+drive robot, a goal sphere, and a randomized field of cuboid obstacles in front
+of the robot's spawn. Each call to :func:`build_scene` produces a fresh
+``(model, data)`` pair so trials are fully independent.
 """
 
 import numpy as np
-import pybullet as p
-import pybullet_data as pd
+import mujoco
 
 
-def setup_world():
-    """Configure PyBullet defaults and load the ground plane.
+# MJCF template. Obstacles are inserted by string substitution.
+MJCF_TEMPLATE = """
+<mujoco model="turtle_world">
+  <compiler angle="radian"/>
+  <option timestep="0.02" integrator="RK4" gravity="0 0 -9.81"/>
+  <default>
+    <geom contype="1" conaffinity="1" friction="0.8 0.005 0.001"/>
+  </default>
 
-    Returns:
-        int: PyBullet body ID for the loaded ground plane.
-    """
-    p.setAdditionalSearchPath(pd.getDataPath())
-    p.setRealTimeSimulation(0)
-    p.setGravity(0, 0, -10)
-    return p.loadURDF("plane100.urdf")
+  <worldbody>
+    <light pos="0 0 5" dir="0 0 -1"/>
+    <geom name="floor" type="plane" size="20 20 0.1" rgba="0.85 0.9 0.85 1"/>
+
+    <body name="turtle" pos="0 0 0.15">
+      <joint type="free"/>
+      <geom name="chassis" type="box" size="0.2 0.15 0.05" mass="2.0" rgba="0.2 0.4 0.85 1"/>
+      <body name="left_wheel" pos="0 0.2 -0.05">
+        <joint name="left_wheel" type="hinge" axis="0 1 0"/>
+        <geom type="cylinder" size="0.1 0.03" euler="1.5708 0 0" mass="0.5" rgba="0.1 0.1 0.1 1"/>
+      </body>
+      <body name="right_wheel" pos="0 -0.2 -0.05">
+        <joint name="right_wheel" type="hinge" axis="0 1 0"/>
+        <geom type="cylinder" size="0.1 0.03" euler="1.5708 0 0" mass="0.5" rgba="0.1 0.1 0.1 1"/>
+      </body>
+    </body>
+
+    <body name="target" pos="6 0 0.3">
+      <geom type="sphere" size="0.3" rgba="0 1 0 0.4" contype="0" conaffinity="0"/>
+    </body>
+
+    {obstacles}
+  </worldbody>
+
+  <actuator>
+    <velocity name="left_motor" joint="left_wheel" kv="50"/>
+    <velocity name="right_motor" joint="right_wheel" kv="50"/>
+  </actuator>
+</mujoco>
+"""
 
 
 def random_obstacle_field(n=16, x_range=(1.0, 6.0), y_range=(-1.5, 1.5), seed=None):
@@ -32,28 +61,31 @@ def random_obstacle_field(n=16, x_range=(1.0, 6.0), y_range=(-1.5, 1.5), seed=No
         seed: RNG seed. Pass an int for reproducible layouts.
 
     Returns:
-        list[list[float]]: List of ``[x, y, z]`` obstacle positions.
+        list[tuple[float, float]]: List of ``(x, y)`` obstacle positions.
     """
     rng = np.random.default_rng(seed)
     xs = rng.uniform(*x_range, n)
     ys = rng.uniform(*y_range, n)
-    return [[float(x), float(y), 1.0] for x, y in zip(xs, ys)]
+    return [(float(x), float(y)) for x, y in zip(xs, ys)]
 
 
-def load_scene(robot_pos, target_pos, obstacle_positions, robot_yaw=0.0):
-    """Spawn the robot, goal marker, and obstacles in the world.
+def build_scene(obstacle_positions):
+    """Compile a fresh MJCF scene with the given obstacle layout.
 
     Args:
-        robot_pos: 3-vector ``[x, y, z]`` spawn position for the robot.
-        target_pos: 3-vector ``[x, y, z]`` goal position.
-        obstacle_positions: Iterable of ``[x, y, z]`` obstacle positions.
-        robot_yaw: Initial heading of the robot in radians.
+        obstacle_positions: Iterable of ``(x, y)`` planar positions for each
+            box obstacle.
 
     Returns:
-        tuple: ``(robot_id, target_id, list_of_obstacle_ids)``.
+        tuple: ``(model, data)`` ready to step with :func:`mujoco.mj_step`.
     """
-    ori = p.getQuaternionFromEuler([0, 0, robot_yaw])
-    robot = p.loadURDF("urdf/most_simple_turtle.urdf", robot_pos, ori)
-    target = p.loadURDF("urdf/target.urdf", target_pos)
-    obstacles = [p.loadURDF("urdf/box.urdf", pos) for pos in obstacle_positions]
-    return robot, target, obstacles
+    obstacle_xml = "\n    ".join(
+        f'<body name="obs_{i}" pos="{x} {y} 0.3">'
+        f'<geom type="box" size="0.15 0.15 0.3" rgba="0.85 0.25 0.25 1"/></body>'
+        for i, (x, y) in enumerate(obstacle_positions)
+    )
+    xml = MJCF_TEMPLATE.format(obstacles=obstacle_xml)
+    model = mujoco.MjModel.from_xml_string(xml)
+    data = mujoco.MjData(model)
+    mujoco.mj_forward(model, data)
+    return model, data
